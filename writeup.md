@@ -10,7 +10,7 @@
 [image6]: ./images/build_all.png "build all"
 [image7]: ./images/run_as.png "run as"
 [image8]: ./images/simulator.png "simulator"
-
+[image9]: ./images/state_machine.png "state machine"
 [image17]: ./images/result.png "result"
 
 **Path Planning Project**
@@ -141,7 +141,100 @@ docker run --rm --name planning \
     ![alt text][image8]
 
 ---
-## 
+## Implementation
+
+To implement this project, I modified `h.onMessageO()` function of main.cpp, between line 248 ~ 439. To create a smooth trajectory, I used the [Cubic Spline interpolation in C++](https://kluge.in-chemnitz.de/opensource/spline/), as Udacity's recommendation. My implementation mainly involve below two categroies.
+
+1. Behavior Planning
+
+    In line 254 ~ 300 as below, I first detect lane of ego vehicle and check whether other cars too close, ahead, left or right. If the car is ahead in same lane and within 30 meter of ego vehicle, then `too_close = true`. If they are in left or right lane and within 30 meter of ego vehicle, then `car_left = true` or `car_right = true`.
+```c++
+    // Lane identifiers for other cars
+    bool too_close = false;
+    bool car_left = false;
+    bool car_right = false;
+
+    // Find ref_v to use, see if car is in lane
+    for (int i = 0; i < sensor_fusion.size(); i++) {
+        // Car is in my lane
+        float d = sensor_fusion[i][6];
+
+        // Identify the lane of the car in question
+        int car_lane;
+        if (d >= 0 && d < 4) {
+            car_lane = 0;
+        } else if (d >= 4 && d < 8) {
+            car_lane = 1;
+        } else if (d >= 8 && d <= 12) {
+            car_lane = 2;
+        } else {
+            continue;
+        }
+
+        // Check width of lane, in case cars are merging into our lane
+        double vx = sensor_fusion[i][3];
+        double vy = sensor_fusion[i][4];
+        double check_speed = sqrt(vx*vx + vy*vy);
+        double check_car_s = sensor_fusion[i][5];
+
+        // If using previous points can project an s value outwards in time
+        // (What position we will be in in the future)
+        // check s values greater than ours and s gap
+        check_car_s += ((double)prev_size*0.02*check_speed);
+
+        int gap = 30; // m
+
+        // Identify whether the car is ahead, to the left, or to the right
+        if (car_lane == lane) {
+            // Another car is ahead
+            too_close |= (check_car_s > car_s) && ((check_car_s - car_s) < gap);
+        } else if (car_lane - lane == 1) {
+            // Another car is to the right
+            car_right |= ((car_s - gap) < check_car_s) && ((car_s + gap) > check_car_s);
+        } else if (lane - car_lane == 1) {
+            // Another car is to the left
+            car_left |= ((car_s - gap) < check_car_s) && ((car_s + gap) > check_car_s);
+        }
+    }
+```
+
+    Then in line 302 ~ 331 as below, then I decide what to do in the future. If a car is ahead and too close, and left or right lane is empty, then I decide to change lane. If left or right lane is not empty, then I would like to slow down. If there is no car ahead and center lane is empty, then I would like to change to center lane. And I would like to try to accelerate.
+```c++
+    // Modulate the speed to avoid collisions. Change lanes if it is safe to do so (nobody to the side)
+    double acc = 0.224;  //0.224 m/s = 0.5 MPH
+    double max_speed = 49.5;
+    if (too_close) {
+        // A car is ahead
+        // Decide to shift lanes or slow down
+        if (!car_right && lane < 2) {
+            // No car to the right AND there is a right lane -> shift right
+            lane++;
+        } else if (!car_left && lane > 0) {
+            // No car to the left AND there is a left lane -> shift left
+            lane--;
+        } else {
+            // Nowhere to shift -> slow down
+            ref_vel -= acc;
+        }
+    } else {
+        if (lane != 1) {
+            // Not in the center lane. Check if it is safe to move back
+            if ((lane == 2 && !car_left) || (lane == 0 && !car_right)) {
+                // Move back to the center lane
+                lane = 1;
+            }
+        }
+        
+        if (ref_vel < max_speed) {
+            // No car ahead AND we are below the speed limit -> speed limit
+            ref_vel += acc;
+        }
+    }
+```
+
+![alt text][image9]
+
+2. Trajectory Generation
 
 ---
 ## Result
