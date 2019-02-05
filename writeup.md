@@ -147,8 +147,9 @@ To implement this project, I modified `h.onMessageO()` function of main.cpp, bet
 
 1. Behavior Planning
 
-    In line 254 ~ 300 as below, I first detect lane of ego vehicle and check whether other cars too close, ahead, left or right. If the car is ahead in same lane and within 30 meter of ego vehicle, then `too_close = true`. If they are in left or right lane and within 30 meter of ego vehicle, then `car_left = true` or `car_right = true`.
-```c++
+In line 254 ~ 300 as below, I first detect lane of ego vehicle and check whether other cars too close, ahead, left or right. If the car is ahead in same lane and within 30 meter of ego vehicle, then `too_close = true`. If they are in left or right lane and within 30 meter of ego vehicle, then `car_left = true` or `car_right = true`.
+
+``` c++
     // Lane identifiers for other cars
     bool too_close = false;
     bool car_left = false;
@@ -198,8 +199,9 @@ To implement this project, I modified `h.onMessageO()` function of main.cpp, bet
     }
 ```
 
-    Then in line 302 ~ 331 as below, then I decide what to do in the future. If a car is ahead and too close, and left or right lane is empty, then I decide to change lane. If left or right lane is not empty, then I would like to slow down. If there is no car ahead and center lane is empty, then I would like to change to center lane. And I would like to try to accelerate.
-```c++
+Then in line 302 ~ 331 as below, I decided what to do in the future. If a car is ahead and too close, and left or right lane is empty, then I decide to change lane. If left or right lane is not empty, then I would like to slow down. If there is no car ahead and center lane is empty, then I would like to change to center lane. And I would like to try to accelerate.
+
+``` c++
     // Modulate the speed to avoid collisions. Change lanes if it is safe to do so (nobody to the side)
     double acc = 0.224;  //0.224 m/s = 0.5 MPH
     double max_speed = 49.5;
