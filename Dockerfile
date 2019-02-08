@@ -1,6 +1,6 @@
 FROM dragon7/carnd-kidnapped-vehicle-project
 
-# Install CarND-Kidnapped-Vehicle-Project
+# Install CarND-Path-Planning-Project
 WORKDIR /root/workspace
 COPY ./ CarND-Path-Planning-Project/
 
